@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  background: #f6f8fb;
+  color: #11243d;
+}
+
+/* Confidence dots — used in takeoff review */
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-inline-end: 6px; }
+.dot-high { background: #16a34a; }
+.dot-mid  { background: #ca8a04; }
+.dot-low  { background: #dc2626; }
