@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../core/audio/mascot_voice.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/services/gamification_service.dart';
 import '../home/avatar_home_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({
+    super.key,
+    required this.gamification,
+    required this.voice,
+  });
+
+  final GamificationService gamification;
+  final MascotVoice voice;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +55,10 @@ class WelcomeScreen extends StatelessWidget {
                 FilledButton(
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const AvatarHomeScreen(),
+                      builder: (_) => AvatarHomeScreen(
+                        gamification: gamification,
+                        voice: voice,
+                      ),
                     ),
                   ),
                   child: const Text('هَيَّا نَبْدَأ'),

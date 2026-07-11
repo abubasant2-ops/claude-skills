@@ -1,17 +1,13 @@
-/// A single daily mission shown on the child's avatar home screen.
+import 'stimulus_item.dart';
+
+/// A daily mission: practice one stimulus word. Three are auto-picked per
+/// day by GamificationService.
 class DailyMission {
-  const DailyMission({
-    required this.id,
-    required this.titleAr,
-    required this.kind,
-  });
+  const DailyMission({required this.id, required this.stimulus});
 
   final String id;
+  final StimulusItem stimulus;
 
-  /// Fully vocalized Arabic title (بِالتَّشْكِيل) — one word.
-  final String titleAr;
-
-  final MissionKind kind;
+  /// Card label — the vocalized target word (icon + one word).
+  String get titleAr => stimulus.wordAr;
 }
-
-enum MissionKind { sounds, words, stories }

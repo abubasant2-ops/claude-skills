@@ -172,6 +172,11 @@ must NOT change when this happens.
   plan (author=ai) for SLP approval; 24 backend tests passing.
   Still open within MVP scope: parent screening questionnaire — schedule alongside Phase D.)
 - **Phase D** — Gamification core + therapist dashboard.
+  (in progress — mobile gamification core done: GamificationService (coins earned-only,
+  NO purchase path ever), 4 badges with unlock rules, 3 deterministic daily missions from
+  a 6-letter pool, mission completion awards coins/updates progress/completes cards,
+  لَفُّوظ voice reactions via bundled espeak clips (placeholder until studio audio) with
+  mirrored speech bubbles; 10 widget tests. Next: therapist dashboard + parent screening.)
 
 Do not jump ahead. Finish, run, commit, then proceed.
 

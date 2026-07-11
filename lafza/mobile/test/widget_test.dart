@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lafza_mobile/core/app.dart';
+import 'package:lafza_mobile/data/services/gamification_service.dart';
 import 'package:lafza_mobile/features/welcome/welcome_screen.dart';
+
+import 'helpers/recording_voice.dart';
 
 void main() {
   testWidgets('app renders the Arabic welcome screen in RTL with Lafza theme',
       (tester) async {
-    await tester.pumpWidget(const LafzaApp());
+    await tester.pumpWidget(LafzaApp(
+      gamification: GamificationService(clock: () => DateTime(2026, 7, 15)),
+      voice: RecordingVoice(),
+    ));
     await tester.pumpAndSettle();
 
     // Welcome screen is shown.

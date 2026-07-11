@@ -17,6 +17,7 @@ dependencies:
   record: ^7.1.1
   path_provider: ^2.1.6
   http: ^1.6.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -26,6 +27,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    # لَفُّوظ voice lines — espeak placeholders until studio recordings.
+    - assets/audio/mascot/
 
   fonts:
     # UI font (blueprint §9): IBM Plex Sans Arabic

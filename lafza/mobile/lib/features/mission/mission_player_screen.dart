@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../core/audio/mascot_voice.dart';
 import '../../core/audio/mission_recorder.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/arabic_numbers.dart';
+import '../../core/widgets/stimulus_icons.dart';
 import '../../data/models/score_result.dart';
 import '../../data/models/stimulus_item.dart';
 import '../../data/services/api_scoring_client.dart';
+import '../../data/services/gamification_service.dart';
 import '../../data/services/scoring_client.dart';
 
 enum _PlayerState { idle, recording, analyzing, result }
@@ -17,12 +20,21 @@ class MissionPlayerScreen extends StatefulWidget {
   MissionPlayerScreen({
     super.key,
     required this.stimulus,
+    this.missionId,
+    this.gamification,
+    this.voice,
     MissionRecorder? recorder,
     ScoringClient? scoringClient,
   })  : recorder = recorder ?? RecordMissionRecorder(),
         scoringClient = scoringClient ?? ApiScoringClient();
 
   final StimulusItem stimulus;
+
+  /// When set, a scored attempt awards coins and completes this mission.
+  final String? missionId;
+  final GamificationService? gamification;
+  final MascotVoice? voice;
+
   final MissionRecorder recorder;
   final ScoringClient scoringClient;
 
@@ -33,6 +45,7 @@ class MissionPlayerScreen extends StatefulWidget {
 class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
   _PlayerState _state = _PlayerState.idle;
   ScoreResult? _result;
+  int _earnedCoins = 0;
 
   /// Per-session guardian consent (hard rule 5). Replaced by the child's
   /// stored consent_flags check when the backend is wired in (Phase C).
@@ -115,8 +128,39 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
         _result = result;
         _state = _PlayerState.result;
       });
+      _celebrate(result);
     } catch (_) {
       _failBackToIdle('تَعَذَّرَ الاتِّصَالُ بِالخَادِم، حَاوِلْ مَرَّةً أُخْرَى');
+    }
+  }
+
+  /// Award coins, complete the mission, react by voice, announce badges.
+  void _celebrate(ScoreResult result) {
+    widget.voice
+        ?.play(result.isGood ? MascotLine.praise : MascotLine.tryAgain);
+
+    final gamification = widget.gamification;
+    final missionId = widget.missionId;
+    if (gamification == null || missionId == null) return;
+
+    final newBadges = gamification.recordMissionResult(
+      missionId: missionId,
+      good: result.isGood,
+    );
+    setState(() {
+      _earnedCoins = GamificationService.effortReward +
+          (result.isGood ? GamificationService.goodBonus : 0);
+    });
+    if (newBadges.isNotEmpty && mounted) {
+      widget.voice?.play(MascotLine.badgeUnlocked);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'مَبْرُوك! شَارَةٌ جَدِيدَة: '
+            '${newBadges.map((b) => b.titleAr).join('، ')}',
+          ),
+        ),
+      );
     }
   }
 
@@ -129,6 +173,7 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
 
   void _reset() => setState(() {
         _result = null;
+        _earnedCoins = 0;
         _state = _PlayerState.idle;
       });
 
@@ -177,7 +222,11 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
       case _PlayerState.analyzing:
         return const _AnalyzingIndicator();
       case _PlayerState.result:
-        return _ResultView(result: _result!, onRetry: _reset);
+        return _ResultView(
+          result: _result!,
+          earnedCoins: _earnedCoins,
+          onRetry: _reset,
+        );
     }
   }
 }
@@ -187,9 +236,7 @@ class _StimulusCard extends StatelessWidget {
 
   final StimulusItem stimulus;
 
-  IconData get _pictureIcon => switch (stimulus.picture) {
-        StimulusPicture.sun => Icons.wb_sunny_rounded,
-      };
+  IconData get _pictureIcon => stimulusIcon(stimulus.picture);
 
   @override
   Widget build(BuildContext context) {
@@ -320,9 +367,14 @@ class _AnalyzingIndicator extends StatelessWidget {
 }
 
 class _ResultView extends StatelessWidget {
-  const _ResultView({required this.result, required this.onRetry});
+  const _ResultView({
+    required this.result,
+    required this.earnedCoins,
+    required this.onRetry,
+  });
 
   final ScoreResult result;
+  final int earnedCoins;
   final VoidCallback onRetry;
 
   @override
@@ -339,6 +391,33 @@ class _ResultView extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+        if (earnedCoins > 0) ...[
+          const SizedBox(height: 8),
+          Container(
+            key: const Key('earned-coins'),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: LafzaColors.saffron.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.paid_rounded,
+                    color: LafzaColors.saffron, size: 24),
+                const SizedBox(width: 6),
+                Text(
+                  '+${toArabicIndicDigits(earnedCoins)} عُمْلَة',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: LafzaColors.navy,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         TextButton.icon(
           onPressed: onRetry,

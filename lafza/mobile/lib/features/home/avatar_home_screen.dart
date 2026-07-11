@@ -1,16 +1,103 @@
 import 'package:flutter/material.dart';
 
+import '../../core/audio/mascot_voice.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/arabic_numbers.dart';
-import '../../data/mock/mock_home_data.dart';
-import '../../data/mock/mock_mission_data.dart';
+import '../../core/widgets/stimulus_icons.dart';
+import '../../data/models/badge.dart';
 import '../../data/models/daily_mission.dart';
+import '../../data/services/gamification_service.dart';
 import '../mission/mission_player_screen.dart';
 
-/// S1 — child's avatar home: mascot لَفُّوظ center, coin counter at the top
-/// start edge (= right in RTL), three daily-mission cards at the bottom.
-class AvatarHomeScreen extends StatelessWidget {
-  const AvatarHomeScreen({super.key});
+/// S1 — child's avatar home: mascot لَفُّوظ center (greets by voice),
+/// live coin counter at the top start edge (right in RTL), badges sheet,
+/// and today's 3 auto-picked mission cards at the bottom.
+class AvatarHomeScreen extends StatefulWidget {
+  const AvatarHomeScreen({
+    super.key,
+    required this.gamification,
+    required this.voice,
+  });
+
+  final GamificationService gamification;
+  final MascotVoice voice;
+
+  @override
+  State<AvatarHomeScreen> createState() => _AvatarHomeScreenState();
+}
+
+class _AvatarHomeScreenState extends State<AvatarHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    widget.voice.play(MascotLine.greeting);
+  }
+
+  Future<void> _openMission(DailyMission mission) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MissionPlayerScreen(
+          stimulus: mission.stimulus,
+          missionId: mission.id,
+          gamification: widget.gamification,
+          voice: widget.voice,
+        ),
+      ),
+    );
+  }
+
+  void _showBadges() {
+    final earned = widget.gamification.earnedBadges;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'شَارَاتِي',
+              style: AppTheme.childWord.copyWith(
+                fontWeight: FontWeight.bold,
+                color: LafzaColors.teal,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                for (final badge in badgeCatalog)
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Icon(
+                          badge.icon,
+                          size: 44,
+                          color: earned.contains(badge.id)
+                              ? LafzaColors.saffron
+                              : Colors.black26,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          badge.titleAr,
+                          textAlign: TextAlign.center,
+                          style: AppTheme.childWord.copyWith(
+                            fontSize: 14,
+                            color: earned.contains(badge.id)
+                                ? LafzaColors.navy
+                                : Colors.black38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,28 +105,58 @@ class AvatarHomeScreen extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Row(
+          child: ListenableBuilder(
+            listenable: widget.gamification,
+            builder: (context, _) {
+              final g = widget.gamification;
+              return Column(
                 children: [
-                  _CoinCounter(coins: mockCoinBalance),
-                ],
-              ),
-              const Spacer(),
-              const _Mascot(),
-              const Spacer(),
-              Row(
-                children: [
-                  for (final mission in mockDailyMissions)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: _MissionCard(mission: mission),
+                  Row(
+                    children: [
+                      _CoinCounter(coins: g.coins),
+                      const Spacer(),
+                      IconButton.filledTonal(
+                        key: const Key('badges-button'),
+                        tooltip: 'شَارَاتِي',
+                        onPressed: _showBadges,
+                        icon: Icon(
+                          Icons.military_tech_rounded,
+                          color: g.earnedBadges.isEmpty
+                              ? Colors.black38
+                              : LafzaColors.saffron,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                  const Spacer(),
+                  const _Mascot(),
+                  const Spacer(),
+                  Text(
+                    'مَهَامُّ اليَوْم: '
+                    '${toArabicIndicDigits(g.completedTodayCount)}/'
+                    '${toArabicIndicDigits(g.todaysMissions.length)}',
+                    style: AppTheme.childWord.copyWith(fontSize: 20),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      for (final mission in g.todaysMissions)
+                        Expanded(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 6),
+                            child: _MissionCard(
+                              mission: mission,
+                              completed: g.isCompleted(mission.id),
+                              onTap: () => _openMission(mission),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -90,9 +207,27 @@ class _Mascot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Speech bubble mirrors the greeting voice line (visual-dominant
+        // feedback groundwork for hearing-impairment mode).
         Container(
-          width: 200,
-          height: 200,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Text(
+            mascotLineTextAr[MascotLine.greeting]!,
+            style: AppTheme.childWord.copyWith(fontSize: 20),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          width: 180,
+          height: 180,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: LafzaColors.teal,
@@ -107,24 +242,18 @@ class _Mascot extends StatelessWidget {
           // Placeholder until لَفُّوظ artwork exists.
           child: const Icon(
             Icons.record_voice_over_rounded,
-            size: 100,
+            size: 90,
             color: LafzaColors.saffron,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         Text(
           'لَفُّوظ',
           style: AppTheme.childWord.copyWith(
-            fontSize: 36,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
             color: LafzaColors.teal,
           ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'مَرْحَبًا يَا بَطَل!',
-          textAlign: TextAlign.center,
-          style: AppTheme.childWord,
         ),
       ],
     );
@@ -132,45 +261,39 @@ class _Mascot extends StatelessWidget {
 }
 
 class _MissionCard extends StatelessWidget {
-  const _MissionCard({required this.mission});
+  const _MissionCard({
+    required this.mission,
+    required this.completed,
+    required this.onTap,
+  });
 
   final DailyMission mission;
-
-  IconData get _icon => switch (mission.kind) {
-        MissionKind.sounds => Icons.mic_rounded,
-        MissionKind.words => Icons.menu_book_rounded,
-        MissionKind.stories => Icons.auto_stories_rounded,
-      };
+  final bool completed;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
+      color: completed ? LafzaColors.success.withValues(alpha: 0.12) : Colors.white,
       borderRadius: BorderRadius.circular(20),
-      elevation: 2,
+      elevation: completed ? 0 : 2,
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: () {
-          if (mission.kind == MissionKind.sounds) {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    MissionPlayerScreen(stimulus: mockSunStimulus),
-              ),
-            );
-          }
-          // Other play zones (words, stories) arrive with library content.
-        },
+        onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(_icon, size: 44, color: LafzaColors.teal),
-              const SizedBox(height: 10),
+              completed
+                  ? const Icon(Icons.check_circle_rounded,
+                      size: 40, color: LafzaColors.success)
+                  : Icon(stimulusIcon(mission.stimulus.picture),
+                      size: 40, color: LafzaColors.teal),
+              const SizedBox(height: 8),
               Text(
                 mission.titleAr,
-                style: AppTheme.childWord.copyWith(fontSize: 20),
+                style: AppTheme.childWord.copyWith(fontSize: 19),
               ),
             ],
           ),

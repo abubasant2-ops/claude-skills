@@ -24,4 +24,4 @@ class StimulusItem {
 }
 
 /// Picture placeholders until illustrated assets exist (content pipeline).
-enum StimulusPicture { sun }
+enum StimulusPicture { sun, moon, book, toy, face, image }
