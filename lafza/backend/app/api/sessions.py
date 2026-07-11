@@ -35,6 +35,8 @@ def create_session(
         child_id=payload.child_id,
         plan_id=payload.plan_id,
         activity_ids=payload.activity_ids,
+        duration_sec=payload.duration_sec,
+        scores_json=payload.scores_json,
     )
     db.add(session)
     db.commit()

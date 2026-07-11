@@ -176,7 +176,12 @@ must NOT change when this happens.
   NO purchase path ever), 4 badges with unlock rules, 3 deterministic daily missions from
   a 6-letter pool, mission completion awards coins/updates progress/completes cards,
   لَفُّوظ voice reactions via bundled espeak clips (placeholder until studio audio) with
-  mirrored speech bubbles; 10 widget tests. Next: therapist dashboard + parent screening.)
+  mirrored speech bubbles. Parent corner done in the same app: streak + weekly-minutes
+  dashboard fed by GET /children/{id}/parent-summary (real aggregation over
+  phoneme_profiles/sessions/plans), 7-day practice bars, daily home program (3 missions),
+  daily reminder preference (OS notifications wired on device builds), simplified weekly
+  report (per-phoneme trend + plan targets); the app logs real practice sessions with
+  measured durations. 11 mobile + 28 backend tests. Next: therapist dashboard + screening.)
 
 Do not jump ahead. Finish, run, commit, then proceed.
 

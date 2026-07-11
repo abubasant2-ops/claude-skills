@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../core/audio/mascot_voice.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/gamification_service.dart';
+import '../../data/services/parent_api_client.dart';
+import '../../data/services/reminder_settings.dart';
+import '../../data/services/scoring_client.dart';
 import '../home/avatar_home_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -10,10 +13,16 @@ class WelcomeScreen extends StatelessWidget {
     super.key,
     required this.gamification,
     required this.voice,
+    required this.scoringClient,
+    required this.parentApi,
+    required this.reminders,
   });
 
   final GamificationService gamification;
   final MascotVoice voice;
+  final ScoringClient scoringClient;
+  final ParentApiClient parentApi;
+  final ReminderSettings reminders;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +67,9 @@ class WelcomeScreen extends StatelessWidget {
                       builder: (_) => AvatarHomeScreen(
                         gamification: gamification,
                         voice: voice,
+                        scoringClient: scoringClient,
+                        parentApi: parentApi,
+                        reminders: reminders,
                       ),
                     ),
                   ),

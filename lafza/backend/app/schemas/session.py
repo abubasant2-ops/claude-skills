@@ -10,6 +10,8 @@ class SessionCreate(BaseModel):
     child_id: uuid.UUID
     plan_id: uuid.UUID | None = None
     activity_ids: list = Field(default_factory=list)
+    duration_sec: int | None = Field(default=None, ge=0)
+    scores_json: dict = Field(default_factory=dict)
 
 
 class SessionOut(BaseModel):

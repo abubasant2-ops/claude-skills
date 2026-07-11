@@ -39,6 +39,7 @@ class _FakeRecorder implements MissionRecorder {
 class _FakeScoringClient implements ScoringClient {
   String? receivedAudioPath;
   bool goodScore = false;
+  int practiceLogs = 0;
 
   @override
   Future<ScoreResult> scoreUtterance({
@@ -56,6 +57,15 @@ class _FakeScoringClient implements ScoringClient {
       errorType: goodScore ? null : 'substitution',
       confidence: 0.91,
     );
+  }
+
+  @override
+  Future<void> logPractice({
+    required String stimulusId,
+    required int durationSec,
+    required ScoreResult result,
+  }) async {
+    practiceLogs++;
   }
 }
 

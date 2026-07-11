@@ -7,7 +7,6 @@ import '../../core/utils/arabic_numbers.dart';
 import '../../core/widgets/stimulus_icons.dart';
 import '../../data/models/score_result.dart';
 import '../../data/models/stimulus_item.dart';
-import '../../data/services/api_scoring_client.dart';
 import '../../data/services/gamification_service.dart';
 import '../../data/services/scoring_client.dart';
 
@@ -20,15 +19,18 @@ class MissionPlayerScreen extends StatefulWidget {
   MissionPlayerScreen({
     super.key,
     required this.stimulus,
+    required this.scoringClient,
     this.missionId,
     this.gamification,
     this.voice,
     MissionRecorder? recorder,
-    ScoringClient? scoringClient,
-  })  : recorder = recorder ?? RecordMissionRecorder(),
-        scoringClient = scoringClient ?? ApiScoringClient();
+  }) : recorder = recorder ?? RecordMissionRecorder();
 
   final StimulusItem stimulus;
+
+  /// Shared client — one instance app-wide so all features use the same
+  /// demo account (see LafzaApp).
+  final ScoringClient scoringClient;
 
   /// When set, a scored attempt awards coins and completes this mission.
   final String? missionId;
@@ -36,7 +38,6 @@ class MissionPlayerScreen extends StatefulWidget {
   final MascotVoice? voice;
 
   final MissionRecorder recorder;
-  final ScoringClient scoringClient;
 
   @override
   State<MissionPlayerScreen> createState() => _MissionPlayerScreenState();
@@ -46,6 +47,7 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
   _PlayerState _state = _PlayerState.idle;
   ScoreResult? _result;
   int _earnedCoins = 0;
+  DateTime? _attemptStartedAt;
 
   /// Per-session guardian consent (hard rule 5). Replaced by the child's
   /// stored consent_flags check when the backend is wired in (Phase C).
@@ -103,7 +105,10 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
       return;
     }
     if (!mounted) return;
-    setState(() => _state = _PlayerState.recording);
+    setState(() {
+      _attemptStartedAt = DateTime.now();
+      _state = _PlayerState.recording;
+    });
   }
 
   Future<void> _stopRecording() async {
@@ -129,6 +134,15 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
         _state = _PlayerState.result;
       });
       _celebrate(result);
+      // Feed the parent dashboard's weekly minutes (best-effort).
+      final startedAt = _attemptStartedAt;
+      if (startedAt != null) {
+        widget.scoringClient.logPractice(
+          stimulusId: widget.stimulus.id,
+          durationSec: DateTime.now().difference(startedAt).inSeconds,
+          result: result,
+        );
+      }
     } catch (_) {
       _failBackToIdle('تَعَذَّرَ الاتِّصَالُ بِالخَادِم، حَاوِلْ مَرَّةً أُخْرَى');
     }

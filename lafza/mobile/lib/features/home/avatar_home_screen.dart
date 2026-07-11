@@ -7,7 +7,11 @@ import '../../core/widgets/stimulus_icons.dart';
 import '../../data/models/badge.dart';
 import '../../data/models/daily_mission.dart';
 import '../../data/services/gamification_service.dart';
+import '../../data/services/parent_api_client.dart';
+import '../../data/services/reminder_settings.dart';
+import '../../data/services/scoring_client.dart';
 import '../mission/mission_player_screen.dart';
+import '../parent/parent_dashboard_screen.dart';
 
 /// S1 — child's avatar home: mascot لَفُّوظ center (greets by voice),
 /// live coin counter at the top start edge (right in RTL), badges sheet,
@@ -17,10 +21,16 @@ class AvatarHomeScreen extends StatefulWidget {
     super.key,
     required this.gamification,
     required this.voice,
+    required this.scoringClient,
+    required this.parentApi,
+    required this.reminders,
   });
 
   final GamificationService gamification;
   final MascotVoice voice;
+  final ScoringClient scoringClient;
+  final ParentApiClient parentApi;
+  final ReminderSettings reminders;
 
   @override
   State<AvatarHomeScreen> createState() => _AvatarHomeScreenState();
@@ -40,6 +50,21 @@ class _AvatarHomeScreenState extends State<AvatarHomeScreen> {
           stimulus: mission.stimulus,
           missionId: mission.id,
           gamification: widget.gamification,
+          voice: widget.voice,
+          scoringClient: widget.scoringClient,
+        ),
+      ),
+    );
+  }
+
+  void _openParentCorner() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ParentDashboardScreen(
+          parentApi: widget.parentApi,
+          gamification: widget.gamification,
+          reminders: widget.reminders,
+          scoringClient: widget.scoringClient,
           voice: widget.voice,
         ),
       ),
@@ -115,6 +140,16 @@ class _AvatarHomeScreenState extends State<AvatarHomeScreen> {
                     children: [
                       _CoinCounter(coins: g.coins),
                       const Spacer(),
+                      IconButton.filledTonal(
+                        key: const Key('parent-button'),
+                        tooltip: 'ركن الوالدين',
+                        onPressed: _openParentCorner,
+                        icon: const Icon(
+                          Icons.family_restroom_rounded,
+                          color: LafzaColors.navy,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       IconButton.filledTonal(
                         key: const Key('badges-button'),
                         tooltip: 'شَارَاتِي',

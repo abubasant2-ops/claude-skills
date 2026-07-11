@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.models import Child, TreatmentPlan, User
 from app.schemas.child import ChildCreate, ChildOut, ChildUpdate
+from app.schemas.parent_summary import ParentSummaryOut
 from app.schemas.treatment_plan import TreatmentPlanOut
+from app.services.parent_summary import build_parent_summary
 from app.services.plan_generator import NoTherapyTargetsError, PlanGeneratorService
 
 router = APIRouter(prefix="/children", tags=["children"])
@@ -21,6 +23,15 @@ def get_child_or_404(child_id: uuid.UUID, db: Session) -> Child:
     if child is None:
         raise HTTPException(status_code=404, detail="child not found")
     return child
+
+
+@router.get("/{child_id}/parent-summary", response_model=ParentSummaryOut)
+def parent_summary(
+    child_id: uuid.UUID, db: Session = Depends(get_db)
+) -> dict:
+    """Streak, weekly practice time, and simplified weekly report (P1/P3)."""
+    get_child_or_404(child_id, db)
+    return build_parent_summary(db, child_id)
 
 
 @router.post(
