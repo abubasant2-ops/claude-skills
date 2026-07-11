@@ -3,26 +3,28 @@ import 'package:flutter/material.dart';
 import '../../core/audio/mission_recorder.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/arabic_numbers.dart';
+import '../../data/models/score_result.dart';
 import '../../data/models/stimulus_item.dart';
-import '../../data/services/mock_scoring_service.dart';
+import '../../data/services/api_scoring_client.dart';
+import '../../data/services/scoring_client.dart';
 
 enum _PlayerState { idle, recording, analyzing, result }
 
 /// S2 — mission player: stimulus card (picture + vocalized word + listen
-/// button) and a big mic button. Records locally, then shows a mock GOP
-/// result ring. No backend calls in Phase B.
+/// button) and a big mic button. Records locally, sends the utterance to the
+/// backend ScoringService, and shows the returned GOP result ring.
 class MissionPlayerScreen extends StatefulWidget {
   MissionPlayerScreen({
     super.key,
     required this.stimulus,
     MissionRecorder? recorder,
-    MockScoringService? scoringService,
+    ScoringClient? scoringClient,
   })  : recorder = recorder ?? RecordMissionRecorder(),
-        scoringService = scoringService ?? MockScoringService();
+        scoringClient = scoringClient ?? ApiScoringClient();
 
   final StimulusItem stimulus;
   final MissionRecorder recorder;
-  final MockScoringService scoringService;
+  final ScoringClient scoringClient;
 
   @override
   State<MissionPlayerScreen> createState() => _MissionPlayerScreenState();
@@ -96,18 +98,33 @@ class _MissionPlayerScreenState extends State<MissionPlayerScreen> {
     if (!mounted) return;
     setState(() => _state = _PlayerState.analyzing);
 
-    // Mock latency so the child sees the analyzing state; the real scoring
-    // round-trip replaces this in Phase C.
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
-    setState(() {
-      _result = widget.scoringService.scoreUtterance(
+    if (audioPath == null) {
+      _failBackToIdle('لَمْ يُحْفَظِ التَّسْجِيل، حَاوِلْ مَرَّةً أُخْرَى');
+      return;
+    }
+    try {
+      // Real round-trip: backend ScoringService scores the utterance and
+      // persists the phoneme_profiles row before answering.
+      final ScoreResult result = await widget.scoringClient.scoreUtterance(
+        audioPath: audioPath,
         targetPhoneme: widget.stimulus.targetPhoneme,
         position: widget.stimulus.position,
-        audioPath: audioPath,
       );
-      _state = _PlayerState.result;
-    });
+      if (!mounted) return;
+      setState(() {
+        _result = result;
+        _state = _PlayerState.result;
+      });
+    } catch (_) {
+      _failBackToIdle('تَعَذَّرَ الاتِّصَالُ بِالخَادِم، حَاوِلْ مَرَّةً أُخْرَى');
+    }
+  }
+
+  void _failBackToIdle(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+    setState(() => _state = _PlayerState.idle);
   }
 
   void _reset() => setState(() {

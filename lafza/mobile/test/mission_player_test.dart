@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lafza_mobile/core/audio/mission_recorder.dart';
 import 'package:lafza_mobile/core/theme/app_theme.dart';
 import 'package:lafza_mobile/data/mock/mock_mission_data.dart';
+import 'package:lafza_mobile/data/models/score_result.dart';
+import 'package:lafza_mobile/data/services/scoring_client.dart';
 import 'package:lafza_mobile/features/mission/mission_player_screen.dart';
 
 class _FakeRecorder implements MissionRecorder {
@@ -27,6 +29,28 @@ class _FakeRecorder implements MissionRecorder {
   Future<void> dispose() async {}
 }
 
+class _FakeScoringClient implements ScoringClient {
+  String? receivedAudioPath;
+
+  @override
+  Future<ScoreResult> scoreUtterance({
+    required String audioPath,
+    required String targetPhoneme,
+    required String position,
+  }) async {
+    receivedAudioPath = audioPath;
+    // Small delay so the analyzing state is observable in the test.
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return ScoreResult(
+      phoneme: targetPhoneme,
+      position: position,
+      gopScore: 64,
+      errorType: 'substitution',
+      confidence: 0.91,
+    );
+  }
+}
+
 Widget _harness(Widget home) => MaterialApp(
       theme: AppTheme.light,
       locale: const Locale('ar'),
@@ -43,11 +67,16 @@ Widget _harness(Widget home) => MaterialApp(
 
 void main() {
   testWidgets(
-      'mission player: stimulus card, consent gate, record → analyze → mock result',
+      'mission player: stimulus card, consent gate, record → analyze → scored result',
       (tester) async {
     final recorder = _FakeRecorder();
+    final scoringClient = _FakeScoringClient();
     await tester.pumpWidget(_harness(
-      MissionPlayerScreen(stimulus: mockSunStimulus, recorder: recorder),
+      MissionPlayerScreen(
+        stimulus: mockSunStimulus,
+        recorder: recorder,
+        scoringClient: scoringClient,
+      ),
     ));
     await tester.pumpAndSettle();
 
@@ -69,15 +98,17 @@ void main() {
     expect(recorder.started, isTrue);
     expect(find.text('جَارِي التَّسْجِيل…'), findsOneWidget);
 
-    // Stop → analyzing state.
+    // Stop → analyzing state while the scoring client round-trips.
     await tester.tap(find.byKey(const Key('stop-button')));
     await tester.pump(const Duration(milliseconds: 100));
     expect(recorder.stopped, isTrue);
     expect(find.text('قَيْدَ التَّحْلِيل…'), findsOneWidget);
 
-    // Mock latency elapses → GOP result ring with Arabic-Indic score.
-    await tester.pump(const Duration(milliseconds: 1600));
+    // Client response arrives → GOP ring shows the backend score «٦٤».
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(scoringClient.receivedAudioPath, '/tmp/fake-utterance.m4a');
     expect(find.byType(GopRing), findsOneWidget);
+    expect(find.text('٦٤'), findsOneWidget);
     expect(find.text('مِنْ ١٠٠'), findsOneWidget);
 
     // Retry resets to idle.
@@ -89,7 +120,11 @@ void main() {
   testWidgets('declining consent never starts the recorder', (tester) async {
     final recorder = _FakeRecorder();
     await tester.pumpWidget(_harness(
-      MissionPlayerScreen(stimulus: mockSunStimulus, recorder: recorder),
+      MissionPlayerScreen(
+        stimulus: mockSunStimulus,
+        recorder: recorder,
+        scoringClient: _FakeScoringClient(),
+      ),
     ));
     await tester.pumpAndSettle();
 
