@@ -6,10 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.models import Child, User
+from app.models import Child, TreatmentPlan, User
 from app.schemas.child import ChildCreate, ChildOut, ChildUpdate
+from app.schemas.treatment_plan import TreatmentPlanOut
+from app.services.plan_generator import NoTherapyTargetsError, PlanGeneratorService
 
 router = APIRouter(prefix="/children", tags=["children"])
+
+plan_generator = PlanGeneratorService()
 
 
 def get_child_or_404(child_id: uuid.UUID, db: Session) -> Child:
@@ -17,6 +21,22 @@ def get_child_or_404(child_id: uuid.UUID, db: Session) -> Child:
     if child is None:
         raise HTTPException(status_code=404, detail="child not found")
     return child
+
+
+@router.post(
+    "/{child_id}/plans/generate",
+    response_model=TreatmentPlanOut,
+    status_code=201,
+)
+def generate_plan(
+    child_id: uuid.UUID, db: Session = Depends(get_db)
+) -> TreatmentPlan:
+    """phoneme_profiles → PlanGeneratorService → draft treatment plan (§7)."""
+    get_child_or_404(child_id, db)
+    try:
+        return plan_generator.generate_for_child(db, child_id)
+    except NoTherapyTargetsError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 @router.post("", response_model=ChildOut, status_code=201)

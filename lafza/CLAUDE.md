@@ -164,11 +164,13 @@ must NOT change when this happens.
   gate, local mic recording via `record`, analyzing state, mock GOP ring via
   MockScoringService mirroring §6); 4 widget tests passing)
 - **Phase C** — Assessment flow: capture → ScoringService (stub) → phoneme_profile → auto plan.
-  (in progress — ScoringService stub done per §6 (sha256-deterministic, hard letters
-  biased low, §7 error patterns); POST /sessions/{id}/utterances scores multipart audio
-  and persists phoneme_profiles; mobile mission player wired to the real API via
-  ScoringClient (ApiScoringClient + dev session bootstrap); E2E proven app→DB;
-  next: screening assessment flow → auto plan generator)
+  (done — ScoringService stub per §6 (sha256-deterministic, hard letters biased low,
+  §7 error patterns); POST /sessions/{id}/utterances scores multipart audio into
+  phoneme_profiles; mobile mission player wired to the real API (ScoringClient), E2E
+  proven app→DB; PlanGeneratorService ranks failing phonemes by §7 developmental tier
+  then stimulability and POST /children/{id}/plans/generate persists a 3-target draft
+  plan (author=ai) for SLP approval; 24 backend tests passing.
+  Still open within MVP scope: parent screening questionnaire — schedule alongside Phase D.)
 - **Phase D** — Gamification core + therapist dashboard.
 
 Do not jump ahead. Finish, run, commit, then proceed.
