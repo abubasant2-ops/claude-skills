@@ -155,8 +155,10 @@ must NOT change when this happens.
 
 ## 8. Build order (follow strictly — details in LAFZA_BUILD_PROMPTS.md)
 
-- **Phase A** — Backend foundation: DB models, migrations, basic CRUD API. (running)
-- **Phase B** — Flutter shell: avatar home + audio-record screen with mock data.
+- **Phase A** — Backend foundation: DB models, migrations, basic CRUD API. (done —
+  8 tables + initial Alembic migration; CRUD for users/children/assessments/treatment-plans
+  under /api/v1; 9 pytest tests passing)
+- **Phase B** — Flutter shell: avatar home + audio-record screen with mock data. (next)
 - **Phase C** — Assessment flow: capture → ScoringService (stub) → phoneme_profile → auto plan.
 - **Phase D** — Gamification core + therapist dashboard.
 
