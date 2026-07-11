@@ -7,6 +7,7 @@ import '../data/services/gamification_service.dart';
 import '../data/services/parent_api_client.dart';
 import '../data/services/reminder_settings.dart';
 import '../data/services/scoring_client.dart';
+import '../data/services/screening_api_client.dart';
 import '../features/welcome/welcome_screen.dart';
 import 'audio/mascot_voice.dart';
 import 'theme/app_theme.dart';
@@ -18,6 +19,7 @@ class LafzaApp extends StatefulWidget {
     this.voice,
     this.scoringClient,
     this.parentApi,
+    this.screeningApi,
     this.reminders,
   });
 
@@ -27,6 +29,7 @@ class LafzaApp extends StatefulWidget {
   final MascotVoice? voice;
   final ScoringClient? scoringClient;
   final ParentApiClient? parentApi;
+  final ScreeningApiClient? screeningApi;
   final ReminderSettings? reminders;
 
   @override
@@ -42,6 +45,8 @@ class _LafzaAppState extends State<LafzaApp> {
       widget.scoringClient ?? ApiScoringClient(account: _account);
   late final ParentApiClient _parentApi =
       widget.parentApi ?? HttpParentApiClient(account: _account);
+  late final ScreeningApiClient _screeningApi =
+      widget.screeningApi ?? HttpScreeningApiClient(account: _account);
   late final ReminderSettings _reminders =
       widget.reminders ?? ReminderSettings();
 
@@ -74,6 +79,7 @@ class _LafzaAppState extends State<LafzaApp> {
         voice: _voice,
         scoringClient: _scoringClient,
         parentApi: _parentApi,
+        screeningApi: _screeningApi,
         reminders: _reminders,
       ),
     );

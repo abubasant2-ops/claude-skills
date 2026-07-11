@@ -10,7 +10,9 @@ import '../../data/services/gamification_service.dart';
 import '../../data/services/parent_api_client.dart';
 import '../../data/services/reminder_settings.dart';
 import '../../data/services/scoring_client.dart';
+import '../../data/services/screening_api_client.dart';
 import '../mission/mission_player_screen.dart';
+import 'screening_screen.dart';
 
 const Map<String, String> _errorTypeAr = {
   'lateralization': 'لثغة جانبية',
@@ -29,6 +31,7 @@ class ParentDashboardScreen extends StatefulWidget {
     required this.gamification,
     required this.reminders,
     required this.scoringClient,
+    required this.screeningApi,
     required this.voice,
   });
 
@@ -36,6 +39,7 @@ class ParentDashboardScreen extends StatefulWidget {
   final GamificationService gamification;
   final ReminderSettings reminders;
   final ScoringClient scoringClient;
+  final ScreeningApiClient screeningApi;
   final MascotVoice voice;
 
   @override
@@ -88,6 +92,8 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
                 _StatsRow(summary: summary),
                 const SizedBox(height: 16),
                 _WeekBars(daily: summary.daily),
+                const SizedBox(height: 16),
+                _ScreeningCard(onStart: _openScreening),
                 const SizedBox(height: 24),
                 _HomeProgram(
                   gamification: widget.gamification,
@@ -105,6 +111,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
     );
   }
 
+  Future<void> _openScreening() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ScreeningScreen(screeningApi: widget.screeningApi),
+      ),
+    );
+  }
+
   Future<void> _openMission(String missionId, StimulusItem stimulus) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -118,6 +132,33 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
       ),
     );
     _reload(); // practice may have changed minutes/report
+  }
+}
+
+class _ScreeningCard extends StatelessWidget {
+  const _ScreeningCard({required this.onStart});
+
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: LafzaColors.teal,
+      borderRadius: BorderRadius.circular(20),
+      child: ListTile(
+        key: const Key('screening-entry'),
+        onTap: onStart,
+        leading:
+            const Icon(Icons.fact_check_rounded, color: Colors.white, size: 32),
+        title: const Text('الفحص المبدئي',
+            style:
+                TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: const Text('أسئلة سريعة عن نطق طفلكم ولغته (~٥ دقائق)',
+            style: TextStyle(color: Colors.white70)),
+        trailing:
+            const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+      ),
+    );
   }
 }
 

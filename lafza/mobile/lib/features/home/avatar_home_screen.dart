@@ -9,6 +9,7 @@ import '../../data/models/daily_mission.dart';
 import '../../data/services/gamification_service.dart';
 import '../../data/services/parent_api_client.dart';
 import '../../data/services/reminder_settings.dart';
+import '../../data/services/screening_api_client.dart';
 import '../../data/services/scoring_client.dart';
 import '../mission/mission_player_screen.dart';
 import '../parent/parent_dashboard_screen.dart';
@@ -23,6 +24,7 @@ class AvatarHomeScreen extends StatefulWidget {
     required this.voice,
     required this.scoringClient,
     required this.parentApi,
+    required this.screeningApi,
     required this.reminders,
   });
 
@@ -30,6 +32,7 @@ class AvatarHomeScreen extends StatefulWidget {
   final MascotVoice voice;
   final ScoringClient scoringClient;
   final ParentApiClient parentApi;
+  final ScreeningApiClient screeningApi;
   final ReminderSettings reminders;
 
   @override
@@ -65,6 +68,7 @@ class _AvatarHomeScreenState extends State<AvatarHomeScreen> {
           gamification: widget.gamification,
           reminders: widget.reminders,
           scoringClient: widget.scoringClient,
+          screeningApi: widget.screeningApi,
           voice: widget.voice,
         ),
       ),

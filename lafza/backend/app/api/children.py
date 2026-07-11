@@ -6,13 +6,20 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.models import Child, TreatmentPlan, User
+from app.models import Assessment, Child, TreatmentPlan, User
+from app.models.enums import AssessmentType
 from app.schemas.child import ChildCreate, ChildOut, ChildUpdate
 from app.schemas.parent_summary import ParentSummaryOut
+from app.schemas.screening import (
+    QuestionnaireOut,
+    ScreeningResultOut,
+    ScreeningSubmission,
+)
 from app.schemas.therapist import HeatmapOut
 from app.schemas.treatment_plan import TreatmentPlanOut
 from app.services.parent_summary import build_parent_summary
 from app.services.plan_generator import NoTherapyTargetsError, PlanGeneratorService
+from app.services.screening import age_in_months, evaluate_screening, get_questionnaire
 from app.services.therapist import build_heatmap
 
 router = APIRouter(prefix="/children", tags=["children"])
@@ -25,6 +32,50 @@ def get_child_or_404(child_id: uuid.UUID, db: Session) -> Child:
     if child is None:
         raise HTTPException(status_code=404, detail="child not found")
     return child
+
+
+@router.get(
+    "/{child_id}/screening/questionnaire", response_model=QuestionnaireOut
+)
+def screening_questionnaire(
+    child_id: uuid.UUID, db: Session = Depends(get_db)
+) -> dict:
+    """Age-relevant screening instrument for this child (blueprint L1)."""
+    child = get_child_or_404(child_id, db)
+    return get_questionnaire(age_in_months(child.dob))
+
+
+@router.post(
+    "/{child_id}/screening",
+    response_model=ScreeningResultOut,
+    status_code=201,
+)
+def submit_screening(
+    child_id: uuid.UUID,
+    payload: ScreeningSubmission,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Evaluate parent answers deterministically and persist the assessment."""
+    child = get_child_or_404(child_id, db)
+    evaluation = evaluate_screening(
+        age_months=age_in_months(child.dob),
+        red_flag_answers=payload.red_flag_answers,
+        vocabulary_checked=payload.vocabulary_checked,
+        intelligibility=payload.intelligibility,
+    )
+    assessment = Assessment(
+        child_id=child.id,
+        type=AssessmentType.SCREENING.value,
+        raw_json={
+            "answers": payload.model_dump(),
+            "evaluation": evaluation,
+        },
+        severity=evaluation["severity"],
+        red_flags=evaluation["red_flags"],
+    )
+    db.add(assessment)
+    db.commit()
+    return {**evaluation, "assessment_id": assessment.id}
 
 
 @router.get("/{child_id}/phoneme-heatmap", response_model=HeatmapOut)

@@ -182,7 +182,11 @@ must NOT change when this happens.
   child profile with 12×3 phoneme heatmap from GET /children/{id}/phoneme-heatmap,
   and draft→approved plan approval via PATCH /treatment-plans (demo SLP bootstrap until
   auth). 11 mobile + 31 backend tests passing.
-  Remaining MVP item before wrap-up: parent screening questionnaire.)
+  Parent screening questionnaire done: versioned instrument (screening-v1) with §11.1
+  red-flag rules, vocabulary checklist (12-48m) and intelligibility rating (30m+), all
+  age-gated; deterministic severity 0-4 + traffic light evaluated server-side and
+  persisted to assessments; in-app flow from the parent corner with result view.
+  All 8 MVP scope bullets now have a working vertical slice.)
 
 Do not jump ahead. Finish, run, commit, then proceed.
 

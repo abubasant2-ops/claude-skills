@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/services/gamification_service.dart';
 import '../../data/services/parent_api_client.dart';
 import '../../data/services/reminder_settings.dart';
+import '../../data/services/screening_api_client.dart';
 import '../../data/services/scoring_client.dart';
 import '../home/avatar_home_screen.dart';
 
@@ -15,6 +16,7 @@ class WelcomeScreen extends StatelessWidget {
     required this.voice,
     required this.scoringClient,
     required this.parentApi,
+    required this.screeningApi,
     required this.reminders,
   });
 
@@ -22,6 +24,7 @@ class WelcomeScreen extends StatelessWidget {
   final MascotVoice voice;
   final ScoringClient scoringClient;
   final ParentApiClient parentApi;
+  final ScreeningApiClient screeningApi;
   final ReminderSettings reminders;
 
   @override
@@ -69,6 +72,7 @@ class WelcomeScreen extends StatelessWidget {
                         voice: voice,
                         scoringClient: scoringClient,
                         parentApi: parentApi,
+                        screeningApi: screeningApi,
                         reminders: reminders,
                       ),
                     ),

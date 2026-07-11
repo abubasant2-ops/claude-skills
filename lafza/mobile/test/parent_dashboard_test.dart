@@ -5,13 +5,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lafza_mobile/core/theme/app_theme.dart';
 import 'package:lafza_mobile/data/models/parent_summary.dart';
 import 'package:lafza_mobile/data/models/score_result.dart';
+import 'package:lafza_mobile/data/models/screening.dart';
 import 'package:lafza_mobile/data/services/gamification_service.dart';
 import 'package:lafza_mobile/data/services/parent_api_client.dart';
 import 'package:lafza_mobile/data/services/reminder_settings.dart';
 import 'package:lafza_mobile/data/services/scoring_client.dart';
+import 'package:lafza_mobile/data/services/screening_api_client.dart';
 import 'package:lafza_mobile/features/parent/parent_dashboard_screen.dart';
 
 import 'helpers/recording_voice.dart';
+
+class _FakeScreeningApi implements ScreeningApiClient {
+  @override
+  Future<ScreeningQuestionnaire> fetchQuestionnaire() async =>
+      throw UnimplementedError();
+
+  @override
+  Future<ScreeningResult> submit({
+    required Map<String, bool> redFlagAnswers,
+    required List<String> vocabularyChecked,
+    int? intelligibility,
+  }) async =>
+      throw UnimplementedError();
+}
 
 class _FakeParentApi implements ParentApiClient {
   int fetches = 0;
@@ -98,6 +114,7 @@ void main() {
       gamification: gamification,
       reminders: reminders,
       scoringClient: _NoopScoring(),
+      screeningApi: _FakeScreeningApi(),
       voice: RecordingVoice(),
     )));
     await tester.pumpAndSettle();
