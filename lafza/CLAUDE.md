@@ -171,17 +171,18 @@ must NOT change when this happens.
   then stimulability and POST /children/{id}/plans/generate persists a 3-target draft
   plan (author=ai) for SLP approval; 24 backend tests passing.
   Still open within MVP scope: parent screening questionnaire — schedule alongside Phase D.)
-- **Phase D** — Gamification core + therapist dashboard.
-  (in progress — mobile gamification core done: GamificationService (coins earned-only,
-  NO purchase path ever), 4 badges with unlock rules, 3 deterministic daily missions from
-  a 6-letter pool, mission completion awards coins/updates progress/completes cards,
-  لَفُّوظ voice reactions via bundled espeak clips (placeholder until studio audio) with
-  mirrored speech bubbles. Parent corner done in the same app: streak + weekly-minutes
-  dashboard fed by GET /children/{id}/parent-summary (real aggregation over
-  phoneme_profiles/sessions/plans), 7-day practice bars, daily home program (3 missions),
-  daily reminder preference (OS notifications wired on device builds), simplified weekly
-  report (per-phoneme trend + plan targets); the app logs real practice sessions with
-  measured durations. 11 mobile + 28 backend tests. Next: therapist dashboard + screening.)
+- **Phase D** — Gamification core + therapist dashboard. (done —
+  Mobile gamification: GamificationService (coins earned-only, NO purchase path ever),
+  4 badges, 3 deterministic daily missions, لَفُّوظ voice via bundled espeak clips
+  (placeholder until studio audio). Parent corner in the same app: streak/minutes
+  dashboard from GET /children/{id}/parent-summary, 7-day bars, home program, reminder
+  preference, weekly report; app logs real practice sessions with measured durations.
+  Therapist dashboard (dashboard/, Next.js 16 + TS + Tailwind, RTL, local Arabic fonts):
+  caseload table (adherence = practiced days/7, ΔGOP 30d) from GET /therapist/caseload,
+  child profile with 12×3 phoneme heatmap from GET /children/{id}/phoneme-heatmap,
+  and draft→approved plan approval via PATCH /treatment-plans (demo SLP bootstrap until
+  auth). 11 mobile + 31 backend tests passing.
+  Remaining MVP item before wrap-up: parent screening questionnaire.)
 
 Do not jump ahead. Finish, run, commit, then proceed.
 

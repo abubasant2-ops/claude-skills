@@ -9,9 +9,11 @@ from app.core.db import get_db
 from app.models import Child, TreatmentPlan, User
 from app.schemas.child import ChildCreate, ChildOut, ChildUpdate
 from app.schemas.parent_summary import ParentSummaryOut
+from app.schemas.therapist import HeatmapOut
 from app.schemas.treatment_plan import TreatmentPlanOut
 from app.services.parent_summary import build_parent_summary
 from app.services.plan_generator import NoTherapyTargetsError, PlanGeneratorService
+from app.services.therapist import build_heatmap
 
 router = APIRouter(prefix="/children", tags=["children"])
 
@@ -23,6 +25,15 @@ def get_child_or_404(child_id: uuid.UUID, db: Session) -> Child:
     if child is None:
         raise HTTPException(status_code=404, detail="child not found")
     return child
+
+
+@router.get("/{child_id}/phoneme-heatmap", response_model=HeatmapOut)
+def phoneme_heatmap(
+    child_id: uuid.UUID, db: Session = Depends(get_db)
+) -> dict:
+    """T2 — latest score per (letter × position) cell for the heatmap."""
+    get_child_or_404(child_id, db)
+    return build_heatmap(db, child_id)
 
 
 @router.get("/{child_id}/parent-summary", response_model=ParentSummaryOut)
