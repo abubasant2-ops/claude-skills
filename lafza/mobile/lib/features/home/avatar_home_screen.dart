@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/arabic_numbers.dart';
 import '../../data/mock/mock_home_data.dart';
+import '../../data/mock/mock_mission_data.dart';
 import '../../data/models/daily_mission.dart';
+import '../mission/mission_player_screen.dart';
 
 /// S1 — child's avatar home: mascot لَفُّوظ center, coin counter at the top
 /// start edge (= right in RTL), three daily-mission cards at the bottom.
@@ -149,7 +151,15 @@ class _MissionCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: () {
-          // Opens the matching play zone once it exists (recorder screen next).
+          if (mission.kind == MissionKind.sounds) {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    MissionPlayerScreen(stimulus: mockSunStimulus),
+              ),
+            );
+          }
+          // Other play zones (words, stories) arrive with library content.
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 18),

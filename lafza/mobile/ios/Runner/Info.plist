@@ -66,5 +66,7 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>يُستخدم الميكروفون لتسجيل نطق الطفل أثناء التمارين العلاجية بعد موافقة ولي الأمر.</string>
 </dict>
 </plist>
