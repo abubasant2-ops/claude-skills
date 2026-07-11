@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../home/avatar_home_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -43,9 +44,11 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 48),
                 FilledButton(
-                  onPressed: () {
-                    // Navigation lands with the avatar-home feature (Phase B next step).
-                  },
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AvatarHomeScreen(),
+                    ),
+                  ),
                   child: const Text('هَيَّا نَبْدَأ'),
                 ),
               ],

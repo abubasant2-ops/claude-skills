@@ -161,7 +161,8 @@ must NOT change when this happens.
 - **Phase B** — Flutter shell: avatar home + audio-record screen with mock data.
   (in progress — mobile/ scaffold done: RTL-first MaterialApp (ar locale), Lafza theme
   with bundled IBM Plex Sans Arabic + Noto Naskh Arabic fonts, vocalized welcome screen,
-  1 widget test passing; avatar home + recorder screens next)
+  avatar home (mascot + coin counter + 3 mission cards, mock data in lib/data),
+  2 widget tests passing; audio-record screen next)
 - **Phase C** — Assessment flow: capture → ScoringService (stub) → phoneme_profile → auto plan.
 - **Phase D** — Gamification core + therapist dashboard.
 
