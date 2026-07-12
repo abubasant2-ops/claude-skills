@@ -1,0 +1,45 @@
+name: lafza_mobile
+description: "Lafza (لفظة) — Arabic speech & language therapy app for children (child + parent)."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  record: ^7.1.1
+  path_provider: ^2.1.6
+  http: ^1.6.0
+  audioplayers: ^6.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # لَفُّوظ voice lines — espeak placeholders until studio recordings.
+    - assets/audio/mascot/
+
+  fonts:
+    # UI font (blueprint §9): IBM Plex Sans Arabic
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    # Child-facing vocalized words (بالتشكيل): Naskh renders diacritics clearly
+    - family: NotoNaskhArabic
+      fonts:
+        - asset: assets/fonts/NotoNaskhArabic-Variable.ttf
