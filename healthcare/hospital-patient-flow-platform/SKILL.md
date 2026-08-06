@@ -1,5 +1,6 @@
 ---
 name: hospital-patient-flow-platform
+license: MIT
 description: "Hospital patient flow and operational intelligence platform. Use when analysing hospital operational data, building capacity or bed management dashboards, measuring emergency department performance, calculating occupancy, ALOS, bed turnover, NEDOCS crowding, door-to-doctor or boarding times, computing quality and patient safety indicators (readmissions, HAI, falls, pressure injuries, medication errors, NEWS2), nursing indicators (NCHPD, skill mix, turnover, vacancy), forecasting bed demand or ED crowding, importing hospital Excel extracts, or preparing evidence for CBAHI, JCI, Magnet or Saudi HSTP accreditation."
 ---
 
