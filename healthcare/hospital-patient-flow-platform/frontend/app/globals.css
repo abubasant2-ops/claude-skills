@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Segoe UI', 'Noto Sans Arabic', 'Helvetica Neue', Arial, sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body {
+  @apply bg-canvas text-ink antialiased;
+  min-height: 100%;
+}
+
+/* Arabic glyphs sit taller than Latin ones, so RTL gets a little more
+   line height rather than looking cramped in the same components. */
+[dir='rtl'] body {
+  line-height: 1.75;
+}
+
+/* Logical properties throughout means one stylesheet serves both
+   directions; nothing needs mirroring by hand. */
+.tile {
+  @apply rounded-xl border border-canvas-border bg-canvas-raised p-4 shadow-tile;
+}
+
+.tile-label {
+  @apply text-sm font-medium text-ink-muted;
+}
+
+.tile-value {
+  @apply text-3xl font-semibold tabular-nums tracking-tight;
+}
+
+.section-title {
+  @apply text-base font-semibold text-ink;
+}
+
+table.data {
+  @apply w-full border-collapse text-sm;
+}
+
+table.data th {
+  @apply border-b border-canvas-border px-3 py-2 text-start text-xs font-semibold uppercase tracking-wide text-ink-muted;
+}
+
+table.data td {
+  @apply border-b border-canvas-border/60 px-3 py-2 text-ink;
+}
+
+table.data tbody tr:hover {
+  @apply bg-white/5;
+}
+
+/* Wide content scrolls inside its own box; the page body never does. */
+.scroll-x {
+  @apply -mx-1 overflow-x-auto px-1;
+}

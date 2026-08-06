@@ -1,0 +1,23 @@
+-- =====================================================================
+-- Session timezone for day-boundary arithmetic.
+--
+-- Every clinical timestamp is stored as TIMESTAMPTZ, which is correct: an
+-- ED arrival happened at one instant regardless of who reads it. But the
+-- analytical views bucket those instants into *days*, and
+-- `date_trunc('day', ts)` on a timestamptz resolves using the session
+-- timezone.
+--
+-- Left at the PostgreSQL default of UTC, a hospital in Asia/Riyadh would
+-- have its day boundaries fall at 03:00 local. A patient discharged at
+-- 01:00 on Tuesday would be counted against Monday, and occupancy totals
+-- would differ from the API's by roughly three hours of census per window
+-- edge -- small enough to be missed, large enough to be wrong.
+--
+-- Pinning it on the database makes every connection consistent, including
+-- the Power BI and psql sessions that never touch the API.
+--
+-- Change 'Asia/Riyadh' to the facility's timezone, and keep it equal to
+-- HPF_FACILITY_TIMEZONE in the application configuration.
+-- =====================================================================
+
+ALTER DATABASE hpf SET timezone TO 'Asia/Riyadh';
