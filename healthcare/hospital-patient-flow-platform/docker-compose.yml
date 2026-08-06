@@ -1,0 +1,61 @@
+name: hospital-patient-flow
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: hpf
+      POSTGRES_USER: hpf
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+      # Arabic unit names sort correctly under this collation.
+      LANG: en_US.utf8
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Files here run once, in name order, on an empty data directory.
+      - ./db/00_timezone.sql:/docker-entrypoint-initdb.d/00_timezone.sql:ro
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/views.sql:/docker-entrypoint-initdb.d/02_views.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hpf -d hpf"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      HPF_DATABASE_URL: postgresql+psycopg://hpf:${POSTGRES_PASSWORD:-change-me-in-production}@db:5432/hpf
+      HPF_ENVIRONMENT: ${HPF_ENVIRONMENT:-development}
+      # Must be a deployment-specific secret; the app refuses to start in
+      # production while this is left at its development default.
+      HPF_MRN_SALT: ${HPF_MRN_SALT:-dev-only-insecure-salt}
+      HPF_CORS_ORIGINS: '["http://localhost:3000"]'
+      HPF_FACILITY_TIMEZONE: Asia/Riyadh
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/var/uploads
+      - models:/app/var/models
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:
+  models:

@@ -1,0 +1,23 @@
+# Generated data and models — regenerate with scripts/
+data/samples/
+data/templates/
+var/
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# Local config
+.env
+.env.local

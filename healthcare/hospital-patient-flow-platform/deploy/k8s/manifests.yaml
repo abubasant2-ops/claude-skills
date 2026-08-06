@@ -1,0 +1,255 @@
+# Kubernetes manifests for a single-cluster deployment.
+#
+# Namespace, config, secrets, both workloads, autoscaling and a network
+# policy. The database is intentionally NOT deployed here: a hospital's
+# PostgreSQL should be a managed instance with backup, point-in-time
+# recovery and its own DR plan, not a StatefulSet nobody owns.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hpf
+  labels:
+    app.kubernetes.io/name: hospital-patient-flow
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hpf-config
+  namespace: hpf
+data:
+  HPF_ENVIRONMENT: "production"
+  HPF_FACILITY_TIMEZONE: "Asia/Riyadh"
+  HPF_DEFAULT_LOCALE: "ar"
+  HPF_MAX_UPLOAD_MB: "200"
+  HPF_MIN_QUALITY_SCORE_TO_LOAD: "60"
+---
+# Managed by the cluster's secret operator in a real deployment; the
+# literal values here are placeholders so `kubectl apply -k` works.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: hpf-secrets
+  namespace: hpf
+type: Opaque
+stringData:
+  HPF_DATABASE_URL: "postgresql+psycopg://hpf:REPLACE_ME@postgres.internal:5432/hpf"
+  # Rotating this re-pseudonymises every patient, breaking longitudinal
+  # linkage. Treat it as permanent for the life of the warehouse.
+  HPF_MRN_SALT: "REPLACE_WITH_32_BYTE_RANDOM_VALUE"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpf-api
+  namespace: hpf
+spec:
+  replicas: 3
+  selector:
+    matchLabels: { app: hpf-api }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  template:
+    metadata:
+      labels: { app: hpf-api }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: api
+          image: ghcr.io/your-org/hpf-api:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef: { name: hpf-config }
+            - secretRef: { name: hpf-secrets }
+          resources:
+            # Analytics requests are pandas-heavy and CPU-bound. The
+            # memory request accommodates a year of encounters in a frame;
+            # under-requesting shows up as OOMKills on the widest windows.
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2000m", memory: "3Gi" }
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: uploads, mountPath: /app/var/uploads }
+            - { name: models, mountPath: /app/var/models }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: uploads
+          persistentVolumeClaim: { claimName: hpf-uploads }
+        - name: models
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hpf-uploads
+  namespace: hpf
+spec:
+  # Uploaded source files are retained for the audit trail, so the volume
+  # must survive pod restarts and be shared across replicas.
+  accessModes: ["ReadWriteMany"]
+  resources:
+    requests: { storage: 50Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpf-api
+  namespace: hpf
+spec:
+  selector: { app: hpf-api }
+  ports:
+    - { port: 80, targetPort: http, name: http }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hpf-web
+  namespace: hpf
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: hpf-web }
+  template:
+    metadata:
+      labels: { app: hpf-web }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: web
+          image: ghcr.io/your-org/hpf-web:1.0.0
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NEXT_PUBLIC_API_BASE
+              value: "https://hpf.hospital.internal/api-proxy"
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "500m", memory: "768Mi" }
+          readinessProbe:
+            httpGet: { path: /en/command/ceo, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hpf-web
+  namespace: hpf
+spec:
+  selector: { app: hpf-web }
+  ports:
+    - { port: 80, targetPort: http, name: http }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpf-api
+  namespace: hpf
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hpf-api
+  minReplicas: 3
+  maxReplicas: 12
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+  behavior:
+    scaleDown:
+      # Morning bed meetings produce a sharp, brief load spike. Scaling
+      # back down too eagerly means the next one is served cold.
+      stabilizationWindowSeconds: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hpf-api
+  namespace: hpf
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app: hpf-api }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hpf-api-ingress
+  namespace: hpf
+spec:
+  podSelector:
+    matchLabels: { app: hpf-api }
+  policyTypes: ["Ingress"]
+  ingress:
+    # Only the web tier and the ingress controller may reach the API; the
+    # warehouse is never addressable from the general cluster network.
+    - from:
+        - podSelector:
+            matchLabels: { app: hpf-web }
+        - namespaceSelector:
+            matchLabels: { name: ingress-nginx }
+      ports:
+        - { protocol: TCP, port: 8000 }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hpf
+  namespace: hpf
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["hpf.hospital.internal"]
+      secretName: hpf-tls
+  rules:
+    - host: hpf.hospital.internal
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: hpf-api
+                port: { number: 80 }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hpf-web
+                port: { number: 80 }
